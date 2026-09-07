@@ -1,5 +1,5 @@
 import { Menu, ArrowRight, HeartHandshake, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 const navItems = [
@@ -16,6 +16,21 @@ export function SiteLayout({ children }: { children: ReactNode }) {
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [open]);
+
   return <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur">
     <div className="shell flex min-h-20 items-center justify-between gap-6">
       <Link to="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
@@ -23,9 +38,9 @@ export function Navbar() {
         <span className="leading-tight"><strong className="block text-sm tracking-[0.08em] text-[var(--dark)]">INDIAN RED CROSS SOCIETY</strong><span className="text-xs font-semibold tracking-[0.25em] text-[var(--crimson)]">NIET</span></span>
       </Link>
       <nav className="hidden items-center gap-7 lg:flex">{navItems.map(([label, href]) => <NavLink key={href} to={href} className={({ isActive }) => `nav-link ${isActive ? "nav-link-active" : ""}`}>{label}</NavLink>)}<Link to="/donate" className="button button-primary">Donate now <ArrowRight size={16} /></Link></nav>
-      <button type="button" className="icon-button lg:hidden" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+      <button type="button" className="icon-button lg:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
     </div>
-    {open && <nav className="border-t border-[var(--border)] bg-white px-6 py-4 lg:hidden">{navItems.map(([label, href]) => <NavLink key={href} to={href} onClick={() => setOpen(false)} className="block border-b border-[var(--border)] py-3 text-sm font-semibold text-[var(--dark)]">{label}</NavLink>)}<Link to="/donate" onClick={() => setOpen(false)} className="button button-primary mt-4 w-full">Donate now <ArrowRight size={16} /></Link></nav>}
+    {open && <nav id="mobile-navigation" ref={menuRef} className="border-t border-[var(--border)] bg-white px-6 py-4 lg:hidden">{navItems.map(([label, href]) => <NavLink key={href} to={href} onClick={() => setOpen(false)} className="block border-b border-[var(--border)] py-3 text-sm font-semibold text-[var(--dark)]">{label}</NavLink>)}<Link to="/donate" onClick={() => setOpen(false)} className="button button-primary mt-4 w-full">Donate now <ArrowRight size={16} /></Link></nav>}
   </header>;
 }
 
