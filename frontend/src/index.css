@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root { --crimson: #b91c1c; --dark: #1f2937; --grey: #6b7280; --light: #f3f4f6; --border: #d1d5db; --cream: #fffaf5; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--cream); color: var(--dark); font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+button, input, textarea, select { font: inherit; }
+button, a { transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s ease; }
+.shell { width: min(1120px, calc(100% - 2rem)); margin-inline: auto; }
+.nav-link { color: var(--grey); font-size: .88rem; font-weight: 700; }
+.nav-link:hover, .nav-link-active { color: var(--crimson); }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; border-radius: 999px; padding: .78rem 1.15rem; font-size: .88rem; font-weight: 800; }
+.button:hover { transform: translateY(-1px); }
+.button-primary { background: var(--crimson); color: white; }
+.button-primary:hover { background: #991b1b; }
+.button-secondary { border: 1px solid var(--border); color: var(--dark); background: white; }
+.button-secondary:hover { border-color: var(--crimson); color: var(--crimson); }
+.icon-button { display: grid; place-items: center; border: 1px solid var(--border); border-radius: 999px; padding: .65rem; color: var(--dark); }
+.eyebrow { color: var(--crimson); font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.section-title { margin-top: .55rem; color: var(--dark); font-size: clamp(2rem, 4vw, 3.3rem); font-weight: 700; line-height: 1.05; letter-spacing: -.03em; }
+.field { width: 100%; border: 1px solid var(--border); border-radius: .7rem; background: white; padding: .8rem .9rem; color: var(--dark); outline: none; }
+.field:focus { border-color: var(--crimson); box-shadow: 0 0 0 3px rgba(185, 28, 28, .12); }
+.hero-grid { background-image: linear-gradient(rgba(185, 28, 28, .07) 1px, transparent 1px), linear-gradient(90deg, rgba(185, 28, 28, .07) 1px, transparent 1px); background-size: 32px 32px; }
