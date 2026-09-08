@@ -1,5 +1,23 @@
 import type { EventItem, NewsItem, Program } from "../types";
 
+export type VolunteerSubmission = {
+  full_name: string;
+  email: string;
+  phone: string;
+  skills?: string;
+  availability?: string;
+  message?: string;
+  blood_group?: string;
+  city: string;
+  college: string;
+};
+export type MemberSubmission = { full_name: string; email: string; phone: string; membership_type: "student" | "general" | "supporting"; message?: string; blood_group?: string; city: string; college?: string };
+export type ContactSubmission = { name: string; email: string; phone?: string; subject: string; message: string };
+export type EmergencySubmission = { name: string; phone: string; location: string; emergency_type: "medical" | "blood_requirement" | "disaster" | "accident" | "other"; description: string; urgency?: "low" | "medium" | "high" | "critical" };
+export type BloodRequestSubmission = { blood_group: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "unknown"; city: string; hospital: string; hospital_location?: string; units_required: number; contact_name: string; contact_phone: string; urgency?: "low" | "medium" | "high" | "critical" };
+export type DonationSubmission = { donor_name: string; email: string; phone?: string; amount: number; frequency: "one_time" | "monthly"; purpose: "general_support" | "blood_donation" | "disaster_relief" | "health_camps" };
+export type SubmissionResult = { id: string; emailVerification?: { status: "sent" | "not_configured" } };
+
 const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "http://localhost:5000";
 
 type ApiSuccess<T> = { success: true; data: T };
@@ -35,6 +53,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return payload.data;
 }
 
+async function submit<T>(path: string, data: unknown): Promise<T> {
+  return request<T>(path, { method: "POST", body: JSON.stringify(data) });
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -66,9 +88,10 @@ export async function getEvents(): Promise<EventItem[]> { return requireList<Eve
 export async function getEvent(slug: string): Promise<EventItem> { return requireItem<EventItem>(await request<unknown>(`/api/events/${encodeURIComponent(slug)}`)); }
 export async function getNews(): Promise<NewsItem[]> { return requireList<NewsItem>(await request<unknown>("/api/news")); }
 export async function getNewsArticle(slug: string): Promise<NewsItem> { return requireItem<NewsItem>(await request<unknown>(`/api/news/${encodeURIComponent(slug)}`)); }
-export function submitVolunteer(_data: unknown): never { throw new ApiNotConfiguredError(); }
-export function submitMember(_data: unknown): never { throw new ApiNotConfiguredError(); }
-export function submitContact(_data: unknown): never { throw new ApiNotConfiguredError(); }
-export function submitEmergency(_data: unknown): never { throw new ApiNotConfiguredError(); }
+export function submitVolunteer(data: VolunteerSubmission): Promise<SubmissionResult> { return submit("/api/volunteers", data); }
+export function submitMember(data: MemberSubmission): Promise<SubmissionResult> { return submit("/api/members", data); }
+export function submitContact(data: ContactSubmission): Promise<SubmissionResult> { return submit("/api/contact", data); }
+export function submitEmergency(data: EmergencySubmission): Promise<SubmissionResult> { return submit("/api/emergencies", data); }
+export function submitBloodRequest(data: BloodRequestSubmission): Promise<SubmissionResult> { return submit("/api/blood-requests", data); }
 export function findBlood(_group: string, _city: string): never { throw new ApiNotConfiguredError(); }
-export function createDonation(_data: unknown): never { throw new ApiNotConfiguredError(); }
+export function createDonation(data: DonationSubmission): Promise<SubmissionResult> { return submit("/api/donations", data); }

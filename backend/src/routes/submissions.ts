@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { requirePool } from "../db/database.js";
+import { sendVerificationEmail } from "../services/email.js";
+import { createVerificationToken } from "../services/verification.js";
 import { parseJsonBody, RequestBodyError } from "../utils/body.js";
 import { sendCreated, sendError } from "../utils/response.js";
 
@@ -9,7 +11,7 @@ type ValidatedData = Record<string, string | number | null>;
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "unknown"];
 const URGENCIES = ["low", "medium", "high", "critical"];
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const PHONE_PATTERN = /^\+?[0-9 ()-]{7,20}$/;
+const PHONE_PATTERN = /^\+?[0-9 ()-]{10,22}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isObject(value: unknown): value is JsonObject {
@@ -40,12 +42,18 @@ function optionalString(data: JsonObject, key: string, maxLength = 500): string 
 function email(data: JsonObject, key: string): string {
   const value = requiredString(data, key, 320);
   if (!EMAIL_PATTERN.test(value)) invalid();
-  return value;
+  return value.toLowerCase();
 }
 
 function phone(data: JsonObject, key: string, required = true): string | null {
   const value = required ? requiredString(data, key, 20) : optionalString(data, key, 20);
-  if (value !== null && !PHONE_PATTERN.test(value)) invalid();
+  if (value !== null && (!PHONE_PATTERN.test(value) || value.replace(/\D/g, "").length < 10)) invalid();
+  return value;
+}
+
+function college(data: JsonObject, key: string, required = false): string | null {
+  const value = required ? requiredString(data, key, 300) : optionalString(data, key, 300);
+  if (value !== null && (value.replace(/[^\p{L}]/gu, "").length < 3 || !/[\p{L}]{3}/u.test(value))) invalid();
   return value;
 }
 
@@ -77,7 +85,7 @@ function positiveAmount(data: JsonObject): number {
 }
 
 function validateVolunteer(body: unknown): ValidatedData {
-  const data = validateObject(body, ["full_name", "email", "phone", "skills", "availability", "message", "chapter_id", "blood_group", "city"]);
+  const data = validateObject(body, ["full_name", "email", "phone", "skills", "availability", "message", "chapter_id", "blood_group", "city", "college"]);
   return {
     full_name: requiredString(data, "full_name", 200),
     email: email(data, "email"),
@@ -88,6 +96,7 @@ function validateVolunteer(body: unknown): ValidatedData {
     chapter_id: optionalUuid(data, "chapter_id"),
     blood_group: optionalOneOf(data, "blood_group", BLOOD_GROUPS),
     city: requiredString(data, "city", 200),
+    college: college(data, "college", true),
   };
 }
 
@@ -102,7 +111,7 @@ function validateMember(body: unknown): ValidatedData {
     chapter_id: optionalUuid(data, "chapter_id"),
     blood_group: optionalOneOf(data, "blood_group", BLOOD_GROUPS),
     city: requiredString(data, "city", 200),
-    college: optionalString(data, "college", 300),
+    college: college(data, "college", data.membership_type === "student"),
   };
 }
 
@@ -177,15 +186,17 @@ export async function handleSubmission(request: IncomingMessage, response: Serve
   try {
     const database = requirePool();
     let result;
+    let verification: { token: string; hash: string; expiresAt: Date } | null = null;
+    if (resource === "volunteers" || resource === "members") verification = createVerificationToken();
     if (resource === "volunteers") {
       result = await database.query(
-        "INSERT INTO volunteers (full_name, email, phone, skills, availability, message, chapter_id, blood_group, city) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
-        [data.full_name, data.email, data.phone, data.skills, data.availability, data.message, data.chapter_id, data.blood_group, data.city],
+        "INSERT INTO volunteers (full_name, email, phone, skills, availability, message, chapter_id, blood_group, city, college, email_verification_token_hash, email_verification_expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id",
+        [data.full_name, data.email, data.phone, data.skills, data.availability, data.message, data.chapter_id, data.blood_group, data.city, data.college, verification?.hash, verification?.expiresAt],
       );
     } else if (resource === "members") {
       result = await database.query(
-        "INSERT INTO members (full_name, email, phone, membership_type, message, chapter_id, blood_group, city, college) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
-        [data.full_name, data.email, data.phone, data.membership_type, data.message, data.chapter_id, data.blood_group, data.city, data.college],
+        "INSERT INTO members (full_name, email, phone, membership_type, message, chapter_id, blood_group, city, college, email_verification_token_hash, email_verification_expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id",
+        [data.full_name, data.email, data.phone, data.membership_type, data.message, data.chapter_id, data.blood_group, data.city, data.college, verification?.hash, verification?.expiresAt],
       );
     } else if (resource === "contact") {
       result = await database.query(
@@ -208,8 +219,22 @@ export async function handleSubmission(request: IncomingMessage, response: Serve
         [data.donor_name, data.email, data.phone, data.amount, data.frequency, data.purpose],
       );
     }
+    if (verification) {
+      const baseUrl = process.env.EMAIL_VERIFICATION_BASE_URL ?? "http://localhost:5000/api/verify-email";
+      const delivery = await sendVerificationEmail({ recipient: data.email as string, verificationUrl: `${baseUrl}?token=${verification.token}` });
+      sendCreated(response, { id: result.rows[0].id, emailVerification: { status: delivery.delivered ? "sent" : "not_configured" } });
+      return;
+    }
     sendCreated(response, { id: result.rows[0].id });
-  } catch {
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      sendError(response, 409, "An active application already exists for this email address.", "CONFLICT");
+      return;
+    }
     sendError(response, 500, "Internal server error");
   }
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
 }

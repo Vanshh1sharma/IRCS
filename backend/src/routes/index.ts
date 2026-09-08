@@ -2,9 +2,10 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { handleHealth } from "./health.js";
 import { handlePublicRoute } from "./public.js";
 import { handleSubmission } from "./submissions.js";
+import { handleEmailVerification } from "./verification.js";
 import { sendError, sendSuccess } from "../utils/response.js";
 
-export async function routeRequest(request: IncomingMessage, response: ServerResponse, pathname: string): Promise<void> {
+export async function routeRequest(request: IncomingMessage, response: ServerResponse, pathname: string, searchParams = new URLSearchParams()): Promise<void> {
   if (request.method === "GET" && pathname === "/api/healthz") {
     await handleHealth(response);
     return;
@@ -12,6 +13,11 @@ export async function routeRequest(request: IncomingMessage, response: ServerRes
 
   if (request.method === "GET" && pathname === "/api") {
     sendSuccess(response, { name: "Indian Red Cross Society - NIET API" });
+    return;
+  }
+
+  if (request.method === "GET" && pathname === "/api/verify-email") {
+    await handleEmailVerification(response, searchParams.get("token"));
     return;
   }
 

@@ -78,8 +78,8 @@ export function FormInput({ label, name, type = "text", placeholder, required = 
   return <label className="grid gap-2 text-sm font-semibold text-[var(--dark)]">{label}<input className="field" name={name} type={type} placeholder={placeholder} required={required} /></label>;
 }
 
-export function FormNotice() {
-  return <div className="mt-5 border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Backend connection is not enabled for this action yet. No information has been submitted or stored.</div>;
+export function FormNotice({ tone = "success", children }: { tone?: "success" | "error"; children: ReactNode }) {
+  return <div role="status" aria-live="polite" className={`mt-5 border p-4 text-sm leading-6 ${tone === "success" ? "border-green-200 bg-green-50 text-green-950" : "border-red-200 bg-red-50 text-red-900"}`}>{children}</div>;
 }
 
 export function LoadingState() { return <div className="py-10 text-center text-sm text-[var(--grey)]">Loading content...</div>; }
