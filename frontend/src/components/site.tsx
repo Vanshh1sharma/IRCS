@@ -53,15 +53,21 @@ export function SectionTitle({ eyebrow, title, description, align = "left" }: { 
 }
 
 export function ProgramCard({ program }: { program: import("../types").Program }) {
-  return <article className="group overflow-hidden rounded-2xl border border-[var(--border)] bg-white"><div className="aspect-[16/9] overflow-hidden bg-slate-100"><img src={program.image} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div><div className="p-6"><p className="eyebrow">{program.category}</p><h3 className="mt-2 text-xl font-semibold text-[var(--dark)]">{program.title}</h3><p className="mt-3 text-sm leading-6 text-[var(--grey)]">{program.description}</p><Link to={`/programs/${program.id}`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[var(--crimson)]">Explore programme <ArrowRight size={15} /></Link></div></article>;
+  const image = program.image_url ?? program.image;
+  return <article className="group overflow-hidden rounded-2xl border border-[var(--border)] bg-white">{image ? <div className="aspect-[16/9] overflow-hidden bg-slate-100"><img src={image} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div> : <div className="h-3 bg-[var(--crimson)]" />}<div className="p-6"><p className="eyebrow">{program.category}</p><h3 className="mt-2 text-xl font-semibold text-[var(--dark)]">{program.title}</h3><p className="mt-3 text-sm leading-6 text-[var(--grey)]">{program.description}</p><Link to={`/programs/${program.slug}`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[var(--crimson)]">Explore programme <ArrowRight size={15} /></Link></div></article>;
 }
 
 export function EventCard({ event }: { event: import("../types").EventItem }) {
-  return <article className="border-l-4 border-[var(--crimson)] bg-[var(--light)] p-5"><p className="eyebrow">{event.program}</p><h3 className="mt-2 text-lg font-semibold text-[var(--dark)]">{event.title}</h3><p className="mt-2 text-sm leading-6 text-[var(--grey)]">{event.description}</p><div className="mt-4 grid gap-1 text-xs font-semibold text-[var(--dark)]"><span>{event.date}</span><span>{event.location}</span></div></article>;
+  return <article className="border-l-4 border-[var(--crimson)] bg-[var(--light)] p-5"><p className="eyebrow">Event</p><h3 className="mt-2 text-lg font-semibold text-[var(--dark)]">{event.title}</h3><p className="mt-2 text-sm leading-6 text-[var(--grey)]">{event.description}</p><div className="mt-4 grid gap-1 text-xs font-semibold text-[var(--dark)]"><span>{formatDate(event.event_date)}</span><span>{event.location}</span></div></article>;
 }
 
 export function NewsCard({ item }: { item: import("../types").NewsItem }) {
-  return <article className="border-t-2 border-[var(--dark)] pt-5"><p className="eyebrow">{item.publishedDate}</p><h3 className="mt-2 text-lg font-semibold text-[var(--dark)]">{item.title}</h3><p className="mt-2 text-sm leading-6 text-[var(--grey)]">{item.summary}</p></article>;
+  return <article className="border-t-2 border-[var(--dark)] pt-5"><p className="eyebrow">{item.published_at ? formatDate(item.published_at) : "Published update"}</p><h3 className="mt-2 text-lg font-semibold text-[var(--dark)]">{item.title}</h3><p className="mt-2 text-sm leading-6 text-[var(--grey)]">{item.summary}</p></article>;
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(date);
 }
 
 export function ImpactCard({ value, label }: { value: string; label: string }) {
@@ -77,5 +83,5 @@ export function FormNotice() {
 }
 
 export function LoadingState() { return <div className="py-10 text-center text-sm text-[var(--grey)]">Loading content...</div>; }
-export function ErrorState() { return <div className="border border-red-200 bg-red-50 p-5 text-sm text-red-900">This content is temporarily unavailable.</div>; }
-export function EmptyState() { return <div className="border border-dashed border-[var(--border)] p-8 text-center text-sm text-[var(--grey)]">No published information is available yet.</div>; }
+export function ErrorState({ onRetry }: { onRetry?: () => void }) { return <div className="border border-red-200 bg-red-50 p-5 text-sm text-red-900"><p>This content is temporarily unavailable.</p>{onRetry && <button type="button" onClick={onRetry} className="mt-3 font-bold underline">Try again</button>}</div>; }
+export function EmptyState({ message = "No published information is available yet." }: { message?: string }) { return <div className="border border-dashed border-[var(--border)] p-8 text-center text-sm text-[var(--grey)]">{message}</div>; }
