@@ -16,6 +16,10 @@ export function sendSuccess(response: ServerResponse, data: unknown): void {
   sendJson(response, 200, { success: true, data });
 }
 
+export function sendCreated(response: ServerResponse, data: unknown): void {
+  sendJson(response, 201, { success: true, data });
+}
+
 export function sendError(response: ServerResponse, statusCode: number, message: string, code?: string): void {
   const errorCode = code ?? (statusCode === 404 ? "NOT_FOUND" : "INTERNAL_ERROR");
   sendJson(response, statusCode, { success: false, error: { code: errorCode, message } });
