@@ -4,6 +4,7 @@ export type VolunteerSubmission = {
   full_name: string;
   email: string;
   phone: string;
+  volunteer_area: "blood_donation" | "community_outreach" | "awareness_campaigns" | "event_support" | "coordination_logistics" | "digital_technical" | "media_documentation";
   skills?: string;
   availability?: string;
   message?: string;
@@ -11,7 +12,7 @@ export type VolunteerSubmission = {
   city: string;
   college: string;
 };
-export type MemberSubmission = { full_name: string; email: string; phone: string; membership_type: "student" | "general" | "supporting"; message?: string; blood_group?: string; city: string; college?: string };
+export type MemberSubmission = { full_name: string; email: string; phone: string; membership_type: "student" | "general" | "supporting"; contribution_area: "blood_donation" | "community_outreach" | "awareness_campaigns" | "event_support" | "digital_technical" | "media_documentation" | "general_support"; message?: string; blood_group?: string; city: string; college?: string };
 export type ContactSubmission = { name: string; email: string; phone?: string; subject: string; message: string };
 export type EmergencySubmission = { name: string; phone: string; location: string; emergency_type: "medical" | "blood_requirement" | "disaster" | "accident" | "other"; description: string; urgency?: "low" | "medium" | "high" | "critical" };
 export type BloodRequestSubmission = { blood_group: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "unknown"; city: string; hospital: string; hospital_location?: string; units_required: number; contact_name: string; contact_phone: string; urgency?: "low" | "medium" | "high" | "critical" };

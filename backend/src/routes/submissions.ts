@@ -10,6 +10,8 @@ type ValidatedData = Record<string, string | number | null>;
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "unknown"];
 const URGENCIES = ["low", "medium", "high", "critical"];
+const VOLUNTEER_AREAS = ["blood_donation", "community_outreach", "awareness_campaigns", "event_support", "coordination_logistics", "digital_technical", "media_documentation"];
+const MEMBER_CONTRIBUTION_AREAS = ["blood_donation", "community_outreach", "awareness_campaigns", "event_support", "digital_technical", "media_documentation", "general_support"];
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const PHONE_PATTERN = /^\+?[0-9 ()-]{10,22}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -85,11 +87,12 @@ function positiveAmount(data: JsonObject): number {
 }
 
 function validateVolunteer(body: unknown): ValidatedData {
-  const data = validateObject(body, ["full_name", "email", "phone", "skills", "availability", "message", "chapter_id", "blood_group", "city", "college"]);
+  const data = validateObject(body, ["full_name", "email", "phone", "volunteer_area", "skills", "availability", "message", "chapter_id", "blood_group", "city", "college"]);
   return {
     full_name: requiredString(data, "full_name", 200),
     email: email(data, "email"),
     phone: phone(data, "phone"),
+    volunteer_area: oneOf(data, "volunteer_area", VOLUNTEER_AREAS),
     skills: optionalString(data, "skills", 1000),
     availability: optionalString(data, "availability", 500),
     message: optionalString(data, "message", 2000),
@@ -101,12 +104,13 @@ function validateVolunteer(body: unknown): ValidatedData {
 }
 
 function validateMember(body: unknown): ValidatedData {
-  const data = validateObject(body, ["full_name", "email", "phone", "membership_type", "message", "chapter_id", "blood_group", "city", "college"]);
+  const data = validateObject(body, ["full_name", "email", "phone", "membership_type", "contribution_area", "message", "chapter_id", "blood_group", "city", "college"]);
   return {
     full_name: requiredString(data, "full_name", 200),
     email: email(data, "email"),
     phone: phone(data, "phone"),
     membership_type: oneOf(data, "membership_type", ["student", "general", "supporting"]),
+    contribution_area: oneOf(data, "contribution_area", MEMBER_CONTRIBUTION_AREAS),
     message: optionalString(data, "message", 2000),
     chapter_id: optionalUuid(data, "chapter_id"),
     blood_group: optionalOneOf(data, "blood_group", BLOOD_GROUPS),
@@ -190,13 +194,13 @@ export async function handleSubmission(request: IncomingMessage, response: Serve
     if (resource === "volunteers" || resource === "members") verification = createVerificationToken();
     if (resource === "volunteers") {
       result = await database.query(
-        "INSERT INTO volunteers (full_name, email, phone, skills, availability, message, chapter_id, blood_group, city, college, email_verification_token_hash, email_verification_expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id",
-        [data.full_name, data.email, data.phone, data.skills, data.availability, data.message, data.chapter_id, data.blood_group, data.city, data.college, verification?.hash, verification?.expiresAt],
+        "INSERT INTO volunteers (full_name, email, phone, volunteer_area, skills, availability, message, chapter_id, blood_group, city, college, email_verification_token_hash, email_verification_expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id",
+        [data.full_name, data.email, data.phone, data.volunteer_area, data.skills, data.availability, data.message, data.chapter_id, data.blood_group, data.city, data.college, verification?.hash, verification?.expiresAt],
       );
     } else if (resource === "members") {
       result = await database.query(
-        "INSERT INTO members (full_name, email, phone, membership_type, message, chapter_id, blood_group, city, college, email_verification_token_hash, email_verification_expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id",
-        [data.full_name, data.email, data.phone, data.membership_type, data.message, data.chapter_id, data.blood_group, data.city, data.college, verification?.hash, verification?.expiresAt],
+        "INSERT INTO members (full_name, email, phone, membership_type, contribution_area, message, chapter_id, blood_group, city, college, email_verification_token_hash, email_verification_expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id",
+        [data.full_name, data.email, data.phone, data.membership_type, data.contribution_area, data.message, data.chapter_id, data.blood_group, data.city, data.college, verification?.hash, verification?.expiresAt],
       );
     } else if (resource === "contact") {
       result = await database.query(
