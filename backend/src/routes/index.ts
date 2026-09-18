@@ -5,7 +5,25 @@ import { handleSubmission } from "./submissions.js";
 import { handleEmailVerification } from "./verification.js";
 import { sendError, sendSuccess } from "../utils/response.js";
 
-export async function routeRequest(request: IncomingMessage, response: ServerResponse, pathname: string, searchParams = new URLSearchParams()): Promise<void> {
+function hasMalformedQueryEncoding(rawSearch: string): boolean {
+  return rawSearch.slice(1).split("&").some((part) => {
+    const [rawKey, rawValue = ""] = part.split("=", 2);
+    try {
+      decodeURIComponent(rawKey.replace(/\+/g, " "));
+      decodeURIComponent(rawValue.replace(/\+/g, " "));
+      return false;
+    } catch {
+      return true;
+    }
+  });
+}
+
+export async function routeRequest(request: IncomingMessage, response: ServerResponse, pathname: string, searchParams = new URLSearchParams(), rawSearch = ""): Promise<void> {
+  if (request.method === "GET" && hasMalformedQueryEncoding(rawSearch)) {
+    sendError(response, 400, "Malformed URL encoding", "BAD_REQUEST");
+    return;
+  }
+
   if (request.method === "GET" && pathname === "/api/healthz") {
     await handleHealth(response);
     return;
@@ -31,7 +49,7 @@ export async function routeRequest(request: IncomingMessage, response: ServerRes
 
   if (request.method === "GET" && pathname.startsWith("/api/")) {
     const segments = pathname.slice("/api/".length).split("/");
-    if (await handlePublicRoute(response, segments)) return;
+    if (await handlePublicRoute(response, segments, searchParams)) return;
   }
 
   sendError(response, 404, "Route not found");

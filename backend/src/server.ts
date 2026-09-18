@@ -17,7 +17,7 @@ const server = createServer((request, response) => {
 
   try {
     const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
-    void routeRequest(request, response, requestUrl.pathname, requestUrl.searchParams).catch(() => {
+    void routeRequest(request, response, requestUrl.pathname, requestUrl.searchParams, requestUrl.search).catch(() => {
       if (!response.headersSent) sendError(response, 500, "Internal server error");
     });
   } catch {

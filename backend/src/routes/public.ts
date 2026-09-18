@@ -3,6 +3,7 @@ import { requirePool } from "../db/database.js";
 import { sendError, sendSuccess } from "../utils/response.js";
 
 const PUBLISHED = "published";
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
 
 function decodeSlug(segment: string): string | null {
   try {
@@ -12,7 +13,7 @@ function decodeSlug(segment: string): string | null {
   }
 }
 
-export async function handlePublicRoute(response: ServerResponse, segments: string[]): Promise<boolean> {
+export async function handlePublicRoute(response: ServerResponse, segments: string[], searchParams = new URLSearchParams()): Promise<boolean> {
   const [resource, rawSlug] = segments;
   if (!resource || segments.length > 2 || (segments.length === 2 && !rawSlug)) {
     return false;
@@ -21,6 +22,48 @@ export async function handlePublicRoute(response: ServerResponse, segments: stri
   const slug = rawSlug === undefined ? undefined : decodeSlug(rawSlug);
   if (slug === null) {
     sendError(response, 400, "Malformed URL encoding", "BAD_REQUEST");
+    return true;
+  }
+
+  if (resource === "blood-availability") {
+    const rawBloodGroup = searchParams.get("blood_group");
+    const bloodGroup = rawBloodGroup?.trim() || undefined;
+    if (bloodGroup !== undefined && !BLOOD_GROUPS.includes(bloodGroup as typeof BLOOD_GROUPS[number])) {
+      sendError(response, 400, "Invalid blood group", "VALIDATION_ERROR");
+      return true;
+    }
+
+    const rawCity = searchParams.get("city");
+    const city = rawCity?.trim().replace(/\s+/g, " ") || undefined;
+    if (city !== undefined && city.length > 200) {
+      sendError(response, 400, "Invalid city", "VALIDATION_ERROR");
+      return true;
+    }
+
+    const values: string[] = [];
+    const filters = ["status IN ('available', 'limited')", "units_available > 0"];
+    if (bloodGroup !== undefined) {
+      values.push(bloodGroup);
+      filters.push(`blood_group = $${values.length}`);
+    }
+    if (city !== undefined) {
+      values.push(city);
+      filters.push(`lower(btrim(city)) = lower($${values.length})`);
+    }
+
+    try {
+      const database = requirePool();
+      const result = await database.query(
+        `SELECT id, blood_group, city, units_available, status, last_updated
+         FROM blood_availability
+         WHERE ${filters.join(" AND ")}
+         ORDER BY city, blood_group, last_updated DESC`,
+        values,
+      );
+      sendSuccess(response, result.rows);
+    } catch {
+      sendError(response, 500, "Internal server error");
+    }
     return true;
   }
 
