@@ -83,5 +83,5 @@ export function FormNotice({ tone = "success", children }: { tone?: "success" | 
 }
 
 export function LoadingState() { return <div className="py-10 text-center text-sm text-[var(--grey)]">Loading content...</div>; }
-export function ErrorState({ onRetry }: { onRetry?: () => void }) { return <div className="border border-red-200 bg-red-50 p-5 text-sm text-red-900"><p>This content is temporarily unavailable.</p>{onRetry && <button type="button" onClick={onRetry} className="mt-3 font-bold underline">Try again</button>}</div>; }
+export function ErrorState({ message = "This content is temporarily unavailable.", onRetry }: { message?: string; onRetry?: () => void }) { return <div className="border border-red-200 bg-red-50 p-5 text-sm text-red-900"><p>{message}</p>{onRetry && <button type="button" onClick={onRetry} className="mt-3 font-bold underline">Try again</button>}</div>; }
 export function EmptyState({ message = "No published information is available yet." }: { message?: string }) { return <div className="border border-dashed border-[var(--border)] p-8 text-center text-sm text-[var(--grey)]">{message}</div>; }

@@ -17,6 +17,8 @@ export type ContactSubmission = { name: string; email: string; phone?: string; s
 export type EmergencySubmission = { name: string; phone: string; location: string; emergency_type: "medical" | "blood_requirement" | "disaster" | "accident" | "other"; description: string; urgency?: "low" | "medium" | "high" | "critical" };
 export type BloodRequestSubmission = { blood_group: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "unknown"; city: string; hospital: string; hospital_location?: string; units_required: number; contact_name: string; contact_phone: string; urgency?: "low" | "medium" | "high" | "critical" };
 export type DonationSubmission = { donor_name: string; email: string; phone?: string; amount: number; frequency: "one_time" | "monthly"; purpose: "general_support" | "blood_donation" | "disaster_relief" | "health_camps" };
+export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+export type BloodAvailability = { id: string; blood_group: BloodGroup; city: string; units_available: number; status: "available" | "limited" | "unavailable"; last_updated: string };
 export type SubmissionResult = { id: string; emailVerification?: { status: "sent" | "not_configured" } };
 
 const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "http://localhost:5000";
@@ -94,5 +96,13 @@ export function submitMember(data: MemberSubmission): Promise<SubmissionResult> 
 export function submitContact(data: ContactSubmission): Promise<SubmissionResult> { return submit("/api/contact", data); }
 export function submitEmergency(data: EmergencySubmission): Promise<SubmissionResult> { return submit("/api/emergencies", data); }
 export function submitBloodRequest(data: BloodRequestSubmission): Promise<SubmissionResult> { return submit("/api/blood-requests", data); }
-export function findBlood(_group: string, _city: string): never { throw new ApiNotConfiguredError(); }
+export function findBlood(group: string, city: string): Promise<BloodAvailability[]> {
+  const params = new URLSearchParams();
+  const normalizedGroup = group.trim();
+  const normalizedCity = city.trim();
+  if (normalizedGroup) params.set("blood_group", normalizedGroup);
+  if (normalizedCity) params.set("city", normalizedCity);
+  const query = params.toString();
+  return request<unknown>(`/api/blood-availability${query ? `?${query}` : ""}`).then(requireList<BloodAvailability>);
+}
 export function createDonation(data: DonationSubmission): Promise<SubmissionResult> { return submit("/api/donations", data); }
