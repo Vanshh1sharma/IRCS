@@ -139,4 +139,5 @@ overrides:
   esbuild: "0.27.3"
 
 allowBuilds:
+  argon2: true
   esbuild: true

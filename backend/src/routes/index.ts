@@ -3,6 +3,7 @@ import { handleHealth } from "./health.js";
 import { handlePublicRoute } from "./public.js";
 import { handleSubmission } from "./submissions.js";
 import { handleEmailVerification } from "./verification.js";
+import { handleAdminRoute } from "./admin.js";
 import { sendError, sendSuccess } from "../utils/response.js";
 
 function hasMalformedQueryEncoding(rawSearch: string): boolean {
@@ -27,6 +28,10 @@ export async function routeRequest(request: IncomingMessage, response: ServerRes
   if (request.method === "GET" && pathname === "/api/healthz") {
     await handleHealth(response);
     return;
+  }
+
+  if (pathname.startsWith("/api/admin")) {
+    if (await handleAdminRoute(request, response, pathname)) return;
   }
 
   if (request.method === "GET" && pathname === "/api") {

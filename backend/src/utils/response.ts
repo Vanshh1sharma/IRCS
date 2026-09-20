@@ -1,13 +1,19 @@
 import type { ServerResponse } from "node:http";
 
-export function sendJson(response: ServerResponse, statusCode: number, body: unknown): void {
+export type ResponseOptions = {
+  corsOrigin?: string;
+  credentials?: boolean;
+};
+
+export function sendJson(response: ServerResponse, statusCode: number, body: unknown, options: ResponseOptions = {}): void {
   const payload = JSON.stringify(body);
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(payload),
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Origin": options.corsOrigin ?? "*",
+    "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token",
+    ...(options.credentials ? { "Access-Control-Allow-Credentials": "true" } : {}),
   });
   response.end(payload);
 }

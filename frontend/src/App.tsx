@@ -1,4 +1,5 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
+import { AdminApp } from "./admin/AdminApp";
 import { SiteLayout } from "./components/site";
 import { AboutPage } from "./pages/AboutPage";
 import { ContactPage } from "./pages/ContactPage";
@@ -9,6 +10,7 @@ import { MembershipPage } from "./pages/MembershipPage";
 import { ProgramDetailPage, ProgramsPage } from "./pages/ProgramsPage";
 
 export default function App() {
+  if (useLocation().pathname.startsWith("/admin")) return <AdminApp />;
   return (
     <SiteLayout>
       <Routes>

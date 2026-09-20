@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { URL } from "node:url";
 import { routeRequest } from "./routes/index.js";
 import { sendError, sendJson } from "./utils/response.js";
+import { allowedAdminOrigins } from "./services/admin-auth.js";
 
 const port = Number(process.env.PORT ?? 5000);
 
@@ -11,7 +12,9 @@ if (!Number.isInteger(port) || port <= 0) {
 
 const server = createServer((request, response) => {
   if (request.method === "OPTIONS") {
-    sendJson(response, 204, null);
+    const origin = typeof request.headers.origin === "string" ? request.headers.origin : null;
+    const isAdmin = (request.url ?? "").startsWith("/api/admin");
+    sendJson(response, 204, null, isAdmin && origin && allowedAdminOrigins().includes(origin) ? { corsOrigin: origin, credentials: true } : undefined);
     return;
   }
 
