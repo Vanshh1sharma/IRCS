@@ -12,10 +12,12 @@
   },
   "dependencies": {
     "argon2": "^0.45.1",
+    "busboy": "^1.6.0",
     "pg": "^8.22.0",
     "resend": "^6.28.1"
   },
   "devDependencies": {
+    "@types/busboy": "^1.5.4",
     "@types/node": "catalog:",
     "@types/pg": "^8.20.3",
     "tsx": "^4.23.13"
